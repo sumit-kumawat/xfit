@@ -1,0 +1,8 @@
+{
+  "name": "xfit",
+  "description": "Production-ready, multi-tenant fitness management platform for Super Admins, Trainers, and Customers with workout tracking, diet planning, BMI analytics, billing, and isolated portals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
