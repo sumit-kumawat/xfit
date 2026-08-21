@@ -302,6 +302,22 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`[xfit Server] Production SQLite Engine running on http://0.0.0.0:${PORT}`);
 });
+
+function gracefulShutdown(signal) {
+  console.log(`[xfit Server] Received ${signal}, closing SQLite connection...`);
+  server.close(() => {
+    try {
+      db.close();
+      console.log('[xfit Server] SQLite database closed safely.');
+    } catch (err) {
+      console.error('[xfit Server] Error closing SQLite database:', err);
+    }
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
