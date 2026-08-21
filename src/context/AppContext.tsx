@@ -113,7 +113,7 @@ interface AppContextType {
   setInstallationStep: (step: number) => void;
   completeInstallationWizard: () => void;
   deleteInstallFolder: () => void;
-  loginAdmin: (identifier: string, pass: string) => boolean;
+  loginAdmin: (identifier: string, pass: string) => Promise<boolean>;
   logoutAdmin: () => void;
   resetToFirstTimeInstall: () => void;
 
@@ -221,7 +221,7 @@ function loadOrSeed<T>(key: string, fallback: T): T {
   return fallback;
 }
 
-import { loadFromSQLite, saveToSQLite } from '../services/api';
+import { loadFromSQLite, saveToSQLite, loginApi, logoutApi } from '../services/api';
 
 function saveStorage<T>(key: string, data: T) {
   try {
@@ -465,7 +465,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveRoute('admin_login');
   };
 
-  const loginAdmin = (identifier: string, pass: string): boolean => {
+  const loginAdmin = async (identifier: string, pass: string): Promise<boolean> => {
+    const res = await loginApi(identifier, pass);
+    if (res.success && res.user) {
+      const session: AdminAuthSession = {
+        isAuthenticated: true,
+        token: res.token || 'session_token_' + Date.now(),
+        adminUser: {
+          fullName: res.user.fullName,
+          email: res.user.email,
+          username: res.user.username,
+          role: res.user.role,
+          lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      };
+
+      setAdminAuth(session);
+      setCurrentRole(res.user.role || 'super_admin');
+      setCurrentUserId(res.user.id);
+      setCurrentTenantId(res.user.tenantId);
+      setActiveRoute('admin');
+      setActiveView('dashboard');
+      showToast('Welcome Administrator', `Authenticated as ${res.user.fullName}. Session active.`);
+      addSystemLog('INFO', 'AUTH_SVC', `Admin login verified for ${identifier}.`);
+      return true;
+    }
+
+    // Fallback verification during initial installation
     const configuredAdmin = installation.superAdmin;
     const isValidIdentifier =
       identifier.trim().toLowerCase() === configuredAdmin.email.toLowerCase() ||
@@ -481,7 +507,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isValidIdentifier && isValidPass) {
       const session: AdminAuthSession = {
         isAuthenticated: true,
-        token: 'jwt_admin_' + Math.random().toString(36).substring(2),
+        token: 'session_token_' + Date.now(),
         adminUser: {
           fullName: configuredAdmin.fullName || 'Alexander Vance',
           email: configuredAdmin.email || 'admin@xfit.com',
@@ -507,15 +533,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
 
-  const logoutAdmin = () => {
+  const logoutAdmin = async () => {
+    await logoutApi();
     setAdminAuth({
       isAuthenticated: false,
       token: null,
       adminUser: null,
     });
-    showToast('Logged Out', 'Super Admin session terminated safely.');
-    addSystemLog('INFO', 'AUTH_SVC', 'Super Admin session logged out.');
+    setSelectedMemberId(null);
+    setActiveView('dashboard');
     setActiveRoute('admin_login');
+    showToast('Logged Out', 'Super Admin session terminated safely. Authentication state purged.');
+    addSystemLog('INFO', 'AUTH_SVC', 'Super Admin session logged out.');
   };
 
   const resetToFirstTimeInstall = () => {

@@ -21,7 +21,7 @@ export const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password.trim()) {
       showToast('Missing Credentials', 'Please enter your Super Admin username/email and password.', 'error');
@@ -29,10 +29,8 @@ export const AdminLogin: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      loginAdmin(identifier.trim(), password);
-    }, 600);
+    await loginAdmin(identifier.trim(), password);
+    setIsSubmitting(false);
   };
 
   const handleQuickFill = () => {
