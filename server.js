@@ -25,7 +25,7 @@ const dbPath = path.join(dbDir, 'xfit.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
-// Helper password hashing
+// Password security helpers
 function hashPassword(password, salt) {
   return crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
 }
@@ -37,33 +37,14 @@ function generateToken() {
 // Database Schema Initialization
 function initDatabase() {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS system_config (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS tenants (
-      id TEXT PRIMARY KEY,
-      subdomain TEXT UNIQUE,
-      businessName TEXT,
-      logo TEXT,
-      primaryColor TEXT,
-      secondaryColor TEXT,
-      footerText TEXT,
-      status TEXT DEFAULT 'active',
-      createdAt TEXT
-    );
-
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
-      tenantId TEXT,
-      email TEXT UNIQUE,
-      username TEXT UNIQUE,
-      passwordHash TEXT,
-      salt TEXT,
-      fullName TEXT,
-      role TEXT,
+      email TEXT UNIQUE NOT NULL,
+      username TEXT UNIQUE NOT NULL,
+      passwordHash TEXT NOT NULL,
+      salt TEXT NOT NULL,
+      fullName TEXT NOT NULL,
+      role TEXT NOT NULL,
       avatarUrl TEXT,
       phone TEXT,
       status TEXT DEFAULT 'active',
@@ -74,41 +55,13 @@ function initDatabase() {
       token TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
       role TEXT NOT NULL,
-      tenantId TEXT NOT NULL,
       expiresAt INTEGER NOT NULL,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS trainers (
-      id TEXT PRIMARY KEY,
-      tenantId TEXT,
-      userId TEXT UNIQUE,
-      specialties TEXT,
-      bio TEXT,
-      experienceYears INTEGER,
-      rating REAL,
-      clientCount INTEGER,
-      monthlyRate INTEGER,
-      socialLinks TEXT,
-      isCertified INTEGER
-    );
-
-    CREATE TABLE IF NOT EXISTS customers (
-      id TEXT PRIMARY KEY,
-      tenantId TEXT,
-      userId TEXT UNIQUE,
-      assignedTrainerId TEXT,
-      assignedTrainerName TEXT,
-      membershipTier TEXT,
-      membershipStatus TEXT,
-      goals TEXT,
-      metrics TEXT
-    );
-
     CREATE TABLE IF NOT EXISTS workout_plans (
       id TEXT PRIMARY KEY,
-      tenantId TEXT,
       trainerId TEXT,
       customerId TEXT,
       customerName TEXT,
@@ -124,7 +77,6 @@ function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS diet_plans (
       id TEXT PRIMARY KEY,
-      tenantId TEXT,
       trainerId TEXT,
       customerId TEXT,
       customerName TEXT,
@@ -139,7 +91,6 @@ function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS chat_messages (
       id TEXT PRIMARY KEY,
-      tenantId TEXT,
       senderId TEXT,
       senderRole TEXT,
       receiverId TEXT,
@@ -151,7 +102,6 @@ function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS payment_transactions (
       id TEXT PRIMARY KEY,
-      tenantId TEXT,
       trainerId TEXT,
       customerId TEXT,
       customerName TEXT,
@@ -170,12 +120,9 @@ function initDatabase() {
       id TEXT PRIMARY KEY,
       timestamp TEXT,
       level TEXT,
-      actorRole TEXT,
-      actorEmail TEXT,
-      action TEXT,
-      tenantId TEXT,
-      ipAddress TEXT,
-      details TEXT
+      service TEXT,
+      message TEXT,
+      ip TEXT
     );
 
     CREATE TABLE IF NOT EXISTS store_data (
@@ -184,50 +131,28 @@ function initDatabase() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
-
-  // Seed default superadmin if no users exist
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-  if (userCount === 0) {
-    const adminId = 'user-superadmin';
-    const tenantId = 'tenant-enterprise';
-    const salt = crypto.randomBytes(16).toString('hex');
-    const passwordHash = hashPassword('SuperAdmin2026!', salt);
-    const createdAt = new Date().toISOString();
-
-    db.prepare(`
-      INSERT INTO tenants (id, subdomain, businessName, logo, primaryColor, secondaryColor, footerText, status, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(tenantId, 'enterprise', 'xfit Enterprise Global', '', '#0071e3', '#86868b', 'Powered by xfit Enterprise Platform', 'active', createdAt);
-
-    db.prepare(`
-      INSERT INTO users (id, tenantId, email, username, passwordHash, salt, fullName, role, avatarUrl, phone, status, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(adminId, tenantId, 'admin@xfit.com', 'superadmin', passwordHash, salt, 'Alexander Vance', 'super_admin', '', '+1 (555) 019-2831', 'active', createdAt);
-  }
 }
 
 initDatabase();
 
-// Authentication Middleware
+// Auth Middleware
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized access. No session token provided.' });
+    return res.status(401).json({ error: 'Unauthorized access. Please log in.' });
   }
 
   const token = authHeader.split(' ')[1];
   const session = db.prepare('SELECT * FROM sessions WHERE token = ?').get(token);
 
   if (!session || session.expiresAt < Date.now()) {
-    if (session) {
-      db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
-    }
+    if (session) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
     return res.status(401).json({ error: 'Session expired. Please log in again.' });
   }
 
-  const user = db.prepare('SELECT id, tenantId, email, username, fullName, role, avatarUrl, phone, status FROM users WHERE id = ?').get(session.userId);
+  const user = db.prepare('SELECT id, email, username, fullName, role, avatarUrl, phone, status FROM users WHERE id = ?').get(session.userId);
   if (!user || user.status !== 'active') {
-    return res.status(403).json({ error: 'Account suspended or invalid.' });
+    return res.status(403).json({ error: 'Account disabled or invalid.' });
   }
 
   req.user = user;
@@ -235,58 +160,93 @@ function authMiddleware(req, res, next) {
   next();
 }
 
-// AUTH API ENDPOINTS
-app.post('/api/auth/login', (req, res) => {
-  const { identifier, password } = req.body;
-  if (!identifier || !password) {
-    return res.status(400).json({ error: 'Please enter username/email and password.' });
+// REST API Endpoints
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'online',
+    platform: 'xfit Personal Fitness Platform',
+    database: 'SQLite 3 (better-sqlite3)',
+    dbPath,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Auth Registration
+app.post('/api/auth/register', (req, res) => {
+  const { email, username, password, fullName, role, phone } = req.body;
+  if (!email || !username || !password || !fullName) {
+    return res.status(400).json({ error: 'Please provide email, username, password, and full name.' });
+  }
+
+  const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email.trim().toLowerCase(), username.trim().toLowerCase());
+  if (existing) {
+    return res.status(400).json({ error: 'User with this email or username already exists.' });
   }
 
   try {
-    const user = db.prepare('SELECT * FROM users WHERE email = ? OR username = ?').get(identifier.trim(), identifier.trim());
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials. User not found.' });
-    }
-
-    const inputHash = hashPassword(password, user.salt);
-    if (inputHash !== user.passwordHash) {
-      return res.status(401).json({ error: 'Invalid password. Please check your credentials.' });
-    }
-
-    // Create session token
-    const token = generateToken();
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-    // Clean old sessions for user
-    db.prepare('DELETE FROM sessions WHERE userId = ?').run(user.id);
+    const id = `user-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const salt = crypto.randomBytes(16).toString('hex');
+    const passwordHash = hashPassword(password, salt);
+    const userRole = role === 'trainer' ? 'trainer' : 'customer';
+    const createdAt = new Date().toISOString();
 
     db.prepare(`
-      INSERT INTO sessions (token, userId, role, tenantId, expiresAt)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(token, user.id, user.role, user.tenantId, expiresAt);
+      INSERT INTO users (id, email, username, passwordHash, salt, fullName, role, phone, status, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
+    `).run(id, email.trim().toLowerCase(), username.trim().toLowerCase(), passwordHash, salt, fullName.trim(), userRole, phone || '', createdAt);
 
-    const safeUser = {
-      id: user.id,
-      tenantId: user.tenantId,
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName,
-      role: user.role,
-      avatarUrl: user.avatarUrl,
-      phone: user.phone,
-      status: user.status,
-    };
+    const token = generateToken();
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+    db.prepare('INSERT INTO sessions (token, userId, role, expiresAt) VALUES (?, ?, ?, ?)').run(token, id, userRole, expiresAt);
 
-    res.json({
-      success: true,
-      token,
-      user: safeUser,
-    });
+    const userObj = { id, email: email.trim().toLowerCase(), username: username.trim().toLowerCase(), fullName: fullName.trim(), role: userRole, phone: phone || '', avatarUrl: '' };
+    res.json({ success: true, token, user: userObj });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Auth Login
+app.post('/api/auth/login', (req, res) => {
+  const { identifier, password } = req.body;
+  if (!identifier || !password) {
+    return res.status(400).json({ error: 'Please enter your username/email and password.' });
+  }
+
+  try {
+    const user = db.prepare('SELECT * FROM users WHERE email = ? OR username = ?').get(identifier.trim().toLowerCase(), identifier.trim().toLowerCase());
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials. No user found.' });
+    }
+
+    const inputHash = hashPassword(password, user.salt);
+    if (inputHash !== user.passwordHash) {
+      return res.status(401).json({ error: 'Invalid password. Please try again.' });
+    }
+
+    const token = generateToken();
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+    db.prepare('DELETE FROM sessions WHERE userId = ?').run(user.id);
+    db.prepare('INSERT INTO sessions (token, userId, role, expiresAt) VALUES (?, ?, ?, ?)').run(token, user.id, user.role, expiresAt);
+
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role,
+      avatarUrl: user.avatarUrl || '',
+      phone: user.phone || '',
+      status: user.status,
+    };
+
+    res.json({ success: true, token, user: safeUser });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Auth Logout
 app.post('/api/auth/logout', authMiddleware, (req, res) => {
   try {
     db.prepare('DELETE FROM sessions WHERE token = ?').run(req.session.token);
@@ -296,23 +256,12 @@ app.post('/api/auth/logout', authMiddleware, (req, res) => {
   }
 });
 
+// Auth Current Session User
 app.get('/api/auth/me', authMiddleware, (req, res) => {
-  res.json({
-    success: true,
-    user: req.user,
-  });
+  res.json({ success: true, user: req.user });
 });
 
-// DATA PERSISTENCE API (Store & Key-Value)
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'online',
-    database: 'SQLite 3 (better-sqlite3)',
-    dbPath,
-    timestamp: new Date().toISOString(),
-  });
-});
-
+// Key-Value Persistent Store Endpoint
 app.get('/api/store/:key', (req, res) => {
   const { key } = req.params;
   try {
@@ -342,7 +291,7 @@ app.post('/api/store/:key', (req, res) => {
   }
 });
 
-// Static Production Files
+// Serve Static Frontend
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));

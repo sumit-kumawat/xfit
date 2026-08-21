@@ -1,30 +1,31 @@
-export type UserRole = 'super_admin' | 'trainer' | 'customer';
+export type UserRole = 'super_admin' | 'trainer' | 'customer' | string;
 
-export type TenantId = 'tenant-sarah' | 'tenant-marcus' | 'tenant-enterprise' | 'tenant-elena';
+export type TenantId = string;
 
 export interface Tenant {
-  id: TenantId;
-  subdomain: string;
+  id: string;
+  subdomain?: string;
   businessName: string;
-  logo: string;
-  primaryColor: string;
-  secondaryColor: string;
-  footerText: string;
+  logo?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  footerText?: string;
   status: 'active' | 'suspended';
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface User {
   id: string;
-  tenantId: TenantId;
+  tenantId?: string;
   email: string;
+  username?: string;
   fullName: string;
   role: UserRole;
   phone?: string;
-  avatarUrl: string;
-  status: 'active' | 'pending' | 'disabled' | 'suspended' | 'expired';
-  tier?: 'Basic' | 'Pro' | 'Enterprise';
-  createdAt: string;
+  avatarUrl?: string;
+  status: 'active' | 'pending' | 'disabled' | 'suspended' | 'expired' | string;
+  tier?: string;
+  createdAt?: string;
   lastLoginAt?: string;
 }
 

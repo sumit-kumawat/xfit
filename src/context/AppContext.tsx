@@ -26,23 +26,23 @@ import {
   SuperAdminAccountConfig,
   SystemSettingsConfig,
 } from '../types';
-import {
-  INITIAL_TENANTS,
-  INITIAL_USERS,
-  INITIAL_TRAINERS,
-  INITIAL_CUSTOMERS,
-  INITIAL_BODY_MEASUREMENTS,
-  INITIAL_BMI_RECORDS,
-  INITIAL_PROGRESS_PHOTOS,
-  INITIAL_WORKOUT_PLANS,
-  INITIAL_DIET_PLANS,
-  INITIAL_TRACKER_PLANS,
-  INITIAL_PAYMENTS,
-  INITIAL_PAYOUTS,
-  INITIAL_CHAT_MESSAGES,
-  INITIAL_SYSTEM_LOGS,
-  INITIAL_SETTINGS,
-} from '../data/mockData';
+const DEFAULT_SETTINGS: PlatformSettings = {
+  portalDisplayName: 'xfit Personal Fitness Hub',
+  platformLogoUrl: '',
+  primaryColor: '#0071e3',
+  secondaryColor: '#86868b',
+  smtp: {
+    host: 'smtp.xfit.cloud',
+    port: 587,
+    encryption: 'TLS',
+    username: 'notifications@xfit.cloud',
+    fromEmail: 'noreply@xfit.cloud',
+    fromName: 'xfit Cloud Services',
+    status: 'Connected',
+  },
+  payoutCycleDay: 1,
+  maintenanceMode: false,
+};
 
 export interface ToastNotification {
   id: string;
@@ -253,36 +253,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return 'customer';
   });
 
-  const [tenants, setTenants] = useState<Tenant[]>(() => loadOrSeed('tenants', INITIAL_TENANTS));
-  const [users, setUsers] = useState<User[]>(() => loadOrSeed('users', INITIAL_USERS));
-  const [trainers, setTrainers] = useState<TrainerProfile[]>(() => loadOrSeed('trainers', INITIAL_TRAINERS));
-  const [customers, setCustomers] = useState<CustomerProfile[]>(() => loadOrSeed('customers', INITIAL_CUSTOMERS));
+  const [tenants, setTenants] = useState<Tenant[]>(() => loadOrSeed('tenants', []));
+  const [users, setUsers] = useState<User[]>(() => loadOrSeed('users', []));
+  const [trainers, setTrainers] = useState<TrainerProfile[]>(() => loadOrSeed('trainers', []));
+  const [customers, setCustomers] = useState<CustomerProfile[]>(() => loadOrSeed('customers', []));
   const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurementRecord[]>(() =>
-    loadOrSeed('measurements', INITIAL_BODY_MEASUREMENTS)
+    loadOrSeed('measurements', [])
   );
-  const [bmiRecords, setBmiRecords] = useState<BmiRecord[]>(() => loadOrSeed('bmi', INITIAL_BMI_RECORDS));
+  const [bmiRecords, setBmiRecords] = useState<BmiRecord[]>(() => loadOrSeed('bmi', []));
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>(() =>
-    loadOrSeed('progress_photos', INITIAL_PROGRESS_PHOTOS)
+    loadOrSeed('progress_photos', [])
   );
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>(() =>
-    loadOrSeed('workouts', INITIAL_WORKOUT_PLANS)
+    loadOrSeed('workouts', [])
   );
-  const [dietPlans, setDietPlans] = useState<DietPlan[]>(() => loadOrSeed('diets', INITIAL_DIET_PLANS));
+  const [dietPlans, setDietPlans] = useState<DietPlan[]>(() => loadOrSeed('diets', []));
   const [trackerPlans, setTrackerPlans] = useState<TrackerPlan[]>(() =>
-    loadOrSeed('trackers', INITIAL_TRACKER_PLANS)
+    loadOrSeed('trackers', [])
   );
-  const [payments, setPayments] = useState<PaymentTransaction[]>(() => loadOrSeed('payments', INITIAL_PAYMENTS));
-  const [payouts, setPayouts] = useState<TrainerPayout[]>(() => loadOrSeed('payouts', INITIAL_PAYOUTS));
+  const [payments, setPayments] = useState<PaymentTransaction[]>(() => loadOrSeed('payments', []));
+  const [payouts, setPayouts] = useState<TrainerPayout[]>(() => loadOrSeed('payouts', []));
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() =>
-    loadOrSeed('chat', INITIAL_CHAT_MESSAGES)
+    loadOrSeed('chat', [])
   );
-  const [systemLogs, setSystemLogs] = useState<SystemLogEntry[]>(() => loadOrSeed('logs', INITIAL_SYSTEM_LOGS));
-  const [settings, setSettings] = useState<PlatformSettings>(() => loadOrSeed('settings', INITIAL_SETTINGS));
+  const [systemLogs, setSystemLogs] = useState<SystemLogEntry[]>(() => loadOrSeed('logs', []));
+  const [settings, setSettings] = useState<PlatformSettings>(() => loadOrSeed('settings', DEFAULT_SETTINGS));
 
-  // Role and Tenant Session
+  // Role and User Session
   const [currentRole, setCurrentRole] = useState<UserRole>('customer');
-  const [currentTenantId, setCurrentTenantId] = useState<string>('tenant-sarah');
-  const [currentUserId, setCurrentUserId] = useState<string>('user-cust-alex');
+  const [currentTenantId, setCurrentTenantId] = useState<string>('tenant-primary');
+  const [currentUserId, setCurrentUserId] = useState<string>('user-active');
 
   // Navigation State
   const [activeView, setActiveView] = useState<string>('dashboard');
@@ -1454,24 +1454,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetDatabase = () => {
     localStorage.clear();
-    setTenants(INITIAL_TENANTS);
-    setUsers(INITIAL_USERS);
-    setTrainers(INITIAL_TRAINERS);
-    setCustomers(INITIAL_CUSTOMERS);
-    setBodyMeasurements(INITIAL_BODY_MEASUREMENTS);
-    setBmiRecords(INITIAL_BMI_RECORDS);
-    setProgressPhotos(INITIAL_PROGRESS_PHOTOS);
-    setWorkoutPlans(INITIAL_WORKOUT_PLANS);
-    setDietPlans(INITIAL_DIET_PLANS);
-    setPayments(INITIAL_PAYMENTS);
-    setPayouts(INITIAL_PAYOUTS);
-    setChatMessages(INITIAL_CHAT_MESSAGES);
-    setSystemLogs(INITIAL_SYSTEM_LOGS);
-    setSettings(INITIAL_SETTINGS);
+    setTenants([]);
+    setUsers([]);
+    setTrainers([]);
+    setCustomers([]);
+    setBodyMeasurements([]);
+    setBmiRecords([]);
+    setProgressPhotos([]);
+    setWorkoutPlans([]);
+    setDietPlans([]);
+    setPayments([]);
+    setPayouts([]);
+    setChatMessages([]);
+    setSystemLogs([]);
+    setSettings(DEFAULT_SETTINGS);
     setInstallation(DEFAULT_INSTALLATION);
     setAdminAuth(DEFAULT_ADMIN_AUTH);
-    setActiveRoute('customer');
-    showToast('Database Reset', 'All records re-seeded to factory demo state.');
+    setActiveRoute('admin_login');
+    showToast('Database Reset', 'All local records and cache cleared cleanly.', 'info');
   };
 
   return (

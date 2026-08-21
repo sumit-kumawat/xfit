@@ -1,6 +1,6 @@
 /**
- * SQLite API & Authentication Service for XFIT Platform
- * Handles session tokens, authentication, RBAC, and database operations.
+ * SQLite API & Authentication Client Service for XFIT
+ * Manages authentication, registrations, session tokens, and database storage.
  */
 
 const API_BASE_URL = typeof window !== 'undefined' 
@@ -23,6 +23,25 @@ export function setStoredToken(token: string) {
 export function clearStoredToken() {
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
+export async function registerApi(userData: { email: string; username: string; password: string; fullName: string; role: 'trainer' | 'customer'; phone?: string }): Promise<{ success: boolean; token?: string; user?: any; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      setStoredToken(data.token);
+      return { success: true, token: data.token, user: data.user };
+    }
+    return { success: false, error: data.error || 'Registration failed' };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Server connection error' };
   }
 }
 

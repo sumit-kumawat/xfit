@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile, onCloseMobile })
           </button>
         ) : (
           <div className="text-[11px] text-[#86868b] text-center py-1 font-medium tracking-tight">
-            xfit Platform • Enterprise
+            xfit Personal Fitness
           </div>
         )}
       </div>
