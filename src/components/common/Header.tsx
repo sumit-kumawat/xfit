@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full apple-glass border-b border-black/5 shadow-xs h-16 transition-all duration-300">
+      <header className="sticky top-0 z-30 w-full apple-nav-glass transition-all duration-300">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           
           {/* Left zone: Mobile toggle and Brand mark */}
@@ -167,17 +167,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                 xfit
                 {currentRole === 'trainer' && (
                   <span className="text-xs font-bold text-slate-700 ml-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-black/5 hidden sm:inline-block">
-                    Trainer Hub
+                    Coach Hub
                   </span>
                 )}
                 {currentRole === 'customer' && (
                   <span className="text-xs font-bold text-emerald-700 ml-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/60 hidden sm:inline-block">
                     Member App
-                  </span>
-                )}
-                {currentRole === 'super_admin' && (
-                  <span className="text-xs font-bold text-amber-800 ml-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200/60 hidden sm:inline-block">
-                    Admin
                   </span>
                 )}
               </span>
@@ -193,11 +188,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                 placeholder={
                   currentRole === 'trainer'
                     ? 'Search members, exercises, diet charts...'
-                    : currentRole === 'super_admin'
-                    ? 'Search gyms, trainers, members, telemetry...'
                     : 'Search workouts, meals, logs, metrics...'
                 }
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-[10px] text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#a73827]/20 focus:border-[#a73827] focus:bg-white transition-all h-[38px]"
+                className="w-full pl-9 pr-4 py-2 bg-[#f5f5f7] border border-black/5 rounded-full text-xs text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30 focus:bg-white transition-all h-[38px]"
               />
             </div>
           </div>

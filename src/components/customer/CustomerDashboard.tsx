@@ -2,13 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Dumbbell,
-  Apple,
-  TrendingUp,
-  TrendingDown,
-  Flame,
-  CheckCircle2,
   Play,
-  Calendar,
   MessageSquare,
   ChevronRight,
   Clock,
@@ -18,10 +12,9 @@ import {
   Scale,
   Award,
   Activity,
-  UserCheck,
-  HeartPulse,
   Utensils,
-  ArrowRight,
+  Flame,
+  Zap,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 
@@ -31,9 +24,6 @@ export const CustomerDashboard: React.FC = () => {
     activeTrainer,
     workoutPlans,
     dietPlans,
-    chatMessages,
-    bodyMeasurements,
-    bmiRecords,
     recordBmi,
     setActiveView,
     showToast,
@@ -41,7 +31,7 @@ export const CustomerDashboard: React.FC = () => {
 
   const [waterGlasses, setWaterGlasses] = useState(6);
   const [showLogWeightModal, setShowLogWeightModal] = useState(false);
-  const [newWeight, setNewWeight] = useState(activeCustomer.currentWeightLbs);
+  const [newWeight, setNewWeight] = useState(activeCustomer.currentWeightLbs || 165);
   const [showBookSessionModal, setShowBookSessionModal] = useState(false);
   const [sessionForm, setSessionForm] = useState({
     date: '2026-08-25',
@@ -63,8 +53,8 @@ export const CustomerDashboard: React.FC = () => {
   const todayDay = currentWorkout?.days[0] || {
     id: 'day-1',
     dayNumber: 1,
-    dayName: 'Day 1: Upper Body Hypertrophy & Power',
-    focus: 'Chest, Delts, Triceps & Upper Back',
+    dayName: 'Day 1: Upper Body Power',
+    focus: 'Chest, Delts & Upper Back',
     estimatedMinutes: 55,
     exercises: [],
   };
@@ -76,19 +66,20 @@ export const CustomerDashboard: React.FC = () => {
   // Macro Calculations
   const targetCalories = currentDiet?.dailyCalories || activeCustomer.targetCalories || 2200;
   const targetProtein = currentDiet?.targetProteinG || activeCustomer.targetProteinG || 160;
-  const targetCarbs = currentDiet?.targetCarbsG || activeCustomer.targetCarbsG || 210;
-  const targetFats = currentDiet?.targetFatsG || activeCustomer.targetFatsG || 65;
 
   const consumedCalories = currentDiet?.meals
     ?.filter((m) => m.isCompleted)
-    .reduce((sum, m) => sum + m.calories, 0) || 1280;
+    .reduce((sum, m) => sum + m.calories, 0) || 1350;
   const consumedProtein = currentDiet?.meals
     ?.filter((m) => m.isCompleted)
-    .reduce((sum, m) => sum + m.proteinG, 0) || 95;
+    .reduce((sum, m) => sum + m.proteinG, 0) || 105;
 
   // Weight Progress
-  const totalWeightToLose = activeCustomer.startWeightLbs - activeCustomer.goalWeightLbs;
-  const currentWeightLost = activeCustomer.startWeightLbs - activeCustomer.currentWeightLbs;
+  const startWeight = activeCustomer.startWeightLbs || 180;
+  const currentWeight = activeCustomer.currentWeightLbs || 165;
+  const goalWeight = activeCustomer.goalWeightLbs || 155;
+  const totalWeightToLose = startWeight - goalWeight;
+  const currentWeightLost = startWeight - currentWeight;
   const goalProgressPct = Math.min(
     Math.max(Math.round((currentWeightLost / (totalWeightToLose || 1)) * 100), 0),
     100
@@ -100,242 +91,321 @@ export const CustomerDashboard: React.FC = () => {
 
   const handleAddWater = () => {
     setWaterGlasses((prev) => Math.min(prev + 1, 12));
-    showToast('Hydration Logged', `+250ml water added (Total: ${(waterGlasses + 1) * 250}ml)`, 'success');
+    showToast('Hydration Logged', `+250ml water logged (Total: ${(waterGlasses + 1) * 250}ml)`, 'success');
   };
 
   const handleLogWeightSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    recordBmi(activeCustomer.id, Number(newWeight), activeCustomer.heightCm);
+    recordBmi(activeCustomer.id, Number(newWeight), activeCustomer.heightCm || 178);
     setShowLogWeightModal(false);
-    showToast('Weight Recorded', `Logged today's weigh-in: ${newWeight} lbs`, 'success');
+    showToast('Weight Logged', `Recorded today's weight: ${newWeight} lbs`, 'success');
   };
 
   const handleBookSessionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowBookSessionModal(false);
-    showToast('Session Requested', `Booked ${sessionForm.type} with ${activeTrainer.fullName} on ${sessionForm.date} at ${sessionForm.time}.`, 'success');
+    showToast('Session Requested', `Booked ${sessionForm.type} with ${activeTrainer.fullName || 'Coach'} on ${sessionForm.date}.`, 'success');
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200 pb-16">
-      {/* Welcome Hero Card in Light Theme */}
-      <div className="bg-white rounded-[10px] p-6 sm:p-7 border border-slate-200 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-[#a73827]/10 text-[#a73827] border border-[#a73827]/20">
-                {activeCustomer.tier} Coaching
-              </span>
-              <span className="text-xs text-slate-500 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                Coach: <span className="font-semibold text-slate-700">{activeTrainer.fullName}</span>
-              </span>
-            </div>
+    <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-300 pb-20">
+      {/* Apple Hero Header Banner */}
+      <div className="apple-bento-card-dark p-6 sm:p-10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+        {/* Background Radial Glow */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#ff2d55]/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#00f0ff]/20 rounded-full blur-3xl pointer-events-none" />
 
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Welcome back, {activeCustomer.fullName.split(' ')[0]}
-            </h1>
-            <p className="text-xs text-slate-500">
-              Prescribed training focus: <strong className="text-slate-800">{todayDay.focus || 'Full Body Resistance'}</strong>.
-            </p>
+        <div className="space-y-3 z-10 text-center md:text-left">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-[#a3ff12] border border-white/15">
+            <Zap className="w-3.5 h-3.5 fill-current" />
+            <span>Apple Fitness+ Inspired Platform</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+            Close Your Rings Today.
+          </h1>
+          <p className="text-sm text-[#86868b] max-w-lg font-normal">
+            Prescribed training focus: <strong className="text-white font-semibold">{todayDay.focus || 'Upper Body Power'}</strong>.
+            Coach: <span className="text-[#a3ff12] font-semibold">{activeTrainer.fullName || 'Personal Coach'}</span>.
+          </p>
+
+          <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
             <button
               onClick={handleStartWorkout}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#a73827] hover:bg-[#8f2f20] text-white rounded-[10px] text-xs font-bold shadow-2xs active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-6 py-3 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full text-xs font-semibold shadow-lg active:scale-95 transition-all cursor-pointer"
             >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>{workoutProgress > 0 ? `Resume (${workoutProgress}%)` : 'Start Workout'}</span>
+              <Play className="w-4 h-4 fill-current" />
+              <span>{workoutProgress > 0 ? `Resume Workout (${workoutProgress}%)` : 'Start Today Workout'}</span>
             </button>
 
             <button
               onClick={() => setActiveView('plans')}
-              className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-[10px] text-xs font-bold transition-colors cursor-pointer"
+              className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-semibold backdrop-blur-md border border-white/10 transition-all cursor-pointer"
             >
-              My Plans
+              View Nutrition Plan
             </button>
           </div>
         </div>
 
-        {/* 4 Biometric & Status Tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div
-            onClick={() => setActiveView('progress')}
-            className="p-3 bg-slate-50 rounded-[8px] border border-slate-200 cursor-pointer hover:border-slate-300 transition-colors"
-          >
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[10px] uppercase font-bold">Weight</span>
-              <Scale className="w-3.5 h-3.5" />
-            </div>
-            <p className="text-base font-black text-slate-900 mt-1 font-mono">{activeCustomer.currentWeightLbs} lbs</p>
-            <span className="text-[10px] text-emerald-700 font-semibold">-{currentWeightLost.toFixed(1)} lbs lost</span>
+        {/* SVG Concentric Apple Activity Rings Widget */}
+        <div className="relative w-44 h-44 shrink-0 flex items-center justify-center z-10">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+            {/* Move Ring (Red) */}
+            <circle cx="60" cy="60" r="50" stroke="rgba(255, 45, 85, 0.2)" strokeWidth="9" fill="none" />
+            <circle
+              cx="60"
+              cy="60"
+              r="50"
+              className="ring-move transition-all duration-1000 ease-out"
+              strokeWidth="9"
+              strokeDasharray="314"
+              strokeDashoffset={314 - (314 * Math.min(consumedCalories / targetCalories, 1))}
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Exercise Ring (Green) */}
+            <circle cx="60" cy="60" r="38" stroke="rgba(163, 255, 18, 0.2)" strokeWidth="9" fill="none" />
+            <circle
+              cx="60"
+              cy="60"
+              r="38"
+              className="ring-exercise transition-all duration-1000 ease-out"
+              strokeWidth="9"
+              strokeDasharray="238"
+              strokeDashoffset={238 - (238 * Math.min((workoutProgress || 20) / 100, 1))}
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Stand Ring (Cyan) */}
+            <circle cx="60" cy="60" r="26" stroke="rgba(0, 240, 255, 0.2)" strokeWidth="9" fill="none" />
+            <circle
+              cx="60"
+              cy="60"
+              r="26"
+              className="ring-stand transition-all duration-1000 ease-out"
+              strokeWidth="9"
+              strokeDasharray="163"
+              strokeDashoffset={163 - (163 * Math.min(waterGlasses / 8, 1))}
+              strokeLinecap="round"
+              fill="none"
+            />
+          </svg>
+          <div className="absolute text-center">
+            <Flame className="w-5 h-5 text-[#ff2d55] mx-auto mb-0.5" />
+            <span className="text-xs font-extrabold text-white">{consumedCalories}</span>
+            <span className="block text-[9px] text-[#86868b]">KCAL</span>
           </div>
+        </div>
+      </div>
 
-          <div
-            onClick={() => setActiveView('progress')}
-            className="p-3 bg-slate-50 rounded-[8px] border border-slate-200 cursor-pointer hover:border-slate-300 transition-colors"
-          >
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[10px] uppercase font-bold">Goal Progress</span>
-              <Award className="w-3.5 h-3.5" />
-            </div>
-            <p className="text-base font-black text-[#a73827] mt-1 font-mono">{goalProgressPct}%</p>
-            <span className="text-[10px] text-slate-400">Target: {activeCustomer.goalWeightLbs} lbs</span>
+      {/* 4 Apple Biometric Bento Grid Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Weight Tile */}
+        <div
+          onClick={() => setActiveView('progress')}
+          className="apple-bento-card p-5 cursor-pointer flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Weight</span>
+            <Scale className="w-4 h-4 text-[#0071e3]" />
           </div>
+          <div className="my-2">
+            <p className="text-2xl font-black text-[#1d1d1f] tracking-tight">{currentWeight} lbs</p>
+            <span className="text-xs font-semibold text-emerald-600">-{currentWeightLost.toFixed(1)} lbs lost</span>
+          </div>
+          <span className="text-[11px] text-[#86868b]">Tap for progress chart</span>
+        </div>
 
-          <div
-            onClick={() => setActiveView('plans')}
-            className="p-3 bg-slate-50 rounded-[8px] border border-slate-200 cursor-pointer hover:border-slate-300 transition-colors"
-          >
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[10px] uppercase font-bold">Protein Today</span>
-              <Utensils className="w-3.5 h-3.5" />
-            </div>
-            <p className="text-base font-black text-slate-900 mt-1 font-mono">{consumedProtein}g / {targetProtein}g</p>
-            <span className="text-[10px] text-slate-400">{Math.round((consumedProtein / targetProtein) * 100)}% met</span>
+        {/* Goal Progress Tile */}
+        <div
+          onClick={() => setActiveView('progress')}
+          className="apple-bento-card p-5 cursor-pointer flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Goal Progress</span>
+            <Award className="w-4 h-4 text-[#ff2d55]" />
           </div>
+          <div className="my-2">
+            <p className="text-2xl font-black text-[#ff2d55] tracking-tight">{goalProgressPct}%</p>
+            <span className="text-xs font-medium text-[#86868b]">Target: {goalWeight} lbs</span>
+          </div>
+          <span className="text-[11px] text-[#86868b]">On track this week</span>
+        </div>
 
-          <div className="p-3 bg-slate-50 rounded-[8px] border border-slate-200 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[10px] uppercase font-bold">Hydration</span>
-              <Droplets className="w-3.5 h-3.5 text-blue-500" />
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-base font-black text-blue-700 font-mono">{(waterGlasses * 0.25).toFixed(1)}L</p>
-              <button
-                onClick={handleAddWater}
-                className="p-1 bg-white border border-slate-200 hover:bg-slate-100 rounded text-slate-700 cursor-pointer"
-                title="Add 250ml"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-            <span className="text-[10px] text-slate-400">{waterGlasses} of 10 glasses</span>
+        {/* Protein Today Tile */}
+        <div
+          onClick={() => setActiveView('plans')}
+          className="apple-bento-card p-5 cursor-pointer flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Protein Today</span>
+            <Utensils className="w-4 h-4 text-[#a3ff12]" />
           </div>
+          <div className="my-2">
+            <p className="text-2xl font-black text-[#1d1d1f] tracking-tight">{consumedProtein}g <span className="text-xs font-normal text-[#86868b]">/ {targetProtein}g</span></p>
+            <span className="text-xs font-semibold text-[#0071e3]">{Math.round((consumedProtein / targetProtein) * 100)}% target met</span>
+          </div>
+          <span className="text-[11px] text-[#86868b]">Log upcoming meal</span>
+        </div>
+
+        {/* Water Log Tile */}
+        <div className="apple-bento-card p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Hydration</span>
+            <Droplets className="w-4 h-4 text-[#00f0ff]" />
+          </div>
+          <div className="flex items-center justify-between my-2">
+            <div>
+              <p className="text-2xl font-black text-[#1d1d1f] tracking-tight">{(waterGlasses * 0.25).toFixed(1)}L</p>
+              <span className="text-xs text-[#86868b]">{waterGlasses} of 10 glasses</span>
+            </div>
+            <button
+              onClick={handleAddWater}
+              className="p-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full active:scale-90 transition-all cursor-pointer shadow-sm"
+              title="Add 250ml"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <span className="text-[11px] text-[#86868b]">+250ml per glass</span>
         </div>
       </div>
 
       {/* Two Column Layout for Active Protocols */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Workout Plan Card */}
-        <div className="bg-white rounded-[10px] p-5 border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Dumbbell className="w-4 h-4 text-[#a73827]" />
-              <h3 className="text-sm font-bold text-slate-900">Today's Resistance Plan</h3>
+        {/* Workout Plan Bento Card */}
+        <div className="apple-bento-card p-6 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between border-b border-black/5 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3]">
+                <Dumbbell className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#1d1d1f]">{currentWorkout?.title || 'Active Workout Routine'}</h3>
+                <p className="text-xs text-[#86868b]">{currentWorkout?.difficulty || 'Intermediate'} • {currentWorkout?.frequency || '4x per week'}</p>
+              </div>
             </div>
-            <span className="text-xs font-semibold text-slate-500 font-mono">
-              {completedExercises}/{totalExercises} Complete
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              Active Plan
             </span>
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-bold text-slate-800">{todayDay.name}</p>
-            <p className="text-[11px] text-slate-500">Coach prescribed progressive overload sequence.</p>
-
-            <div className="divide-y divide-slate-100 pt-1">
-              {todayDay.exercises.slice(0, 3).map((ex, idx) => (
-                <div key={ex.id || idx} className="py-2 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-slate-900">{ex.name}</span>
-                    <span className="text-slate-400 text-[11px] block">{ex.category} • Rest: {ex.restTime}</span>
-                  </div>
-                  <span className="font-mono font-bold text-slate-700">{ex.sets} × {ex.reps}</span>
-                </div>
-              ))}
+            <div className="flex items-center justify-between text-xs font-semibold text-[#1d1d1f]">
+              <span>{todayDay.dayName}</span>
+              <span className="text-[#86868b] flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {todayDay.estimatedMinutes} min</span>
             </div>
+            <p className="text-xs text-[#86868b] font-normal">{todayDay.focus}</p>
           </div>
 
-          <button
-            onClick={handleStartWorkout}
-            className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-[8px] text-xs font-bold text-slate-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <span>Open Exercise Execution</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="pt-2">
+            <button
+              onClick={handleStartWorkout}
+              className="w-full py-3 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full text-xs font-semibold flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-all cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Launch Active Session</span>
+            </button>
+          </div>
         </div>
 
-        {/* Nutrition Protocol Card */}
-        <div className="bg-white rounded-[10px] p-5 border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Apple className="w-4 h-4 text-emerald-600" />
-              <h3 className="text-sm font-bold text-slate-900">Today's Nutrition Protocol</h3>
+        {/* Coach Session & Messages Bento Card */}
+        <div className="apple-bento-card p-6 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between border-b border-black/5 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#1d1d1f]">{activeTrainer.fullName || 'Personal Coach'}</h3>
+                <p className="text-xs text-[#86868b]">{activeTrainer.title || 'Certified Strength Specialist'}</p>
+              </div>
             </div>
-            <span className="text-xs font-semibold text-slate-500 font-mono">
-              {consumedCalories} / {targetCalories} kcal
-            </span>
+            <button
+              onClick={() => setActiveView('chat')}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#0071e3] text-white flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Chat</span>
+            </button>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-slate-800">{currentDiet?.title || 'Daily Meal Plan'}</p>
-              {currentDiet?.dietType && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                  {currentDiet.dietType}
-                </span>
-              )}
-            </div>
-
-            <div className="divide-y divide-slate-100 pt-1">
-              {currentDiet?.meals?.slice(0, 3).map((meal) => (
-                <div key={meal.id} className="py-2 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-slate-900">{meal.name}</span>
-                    <span className="text-slate-400 text-[11px] block">{meal.timeStr} • {meal.mealType}</span>
-                  </div>
-                  <span className="font-mono text-slate-600">{meal.calories} kcal</span>
-                </div>
-              ))}
-            </div>
+          <div className="bg-[#f5f5f7] p-4 rounded-2xl border border-black/5 space-y-2">
+            <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider">Next 1-on-1 Coaching</span>
+            <p className="text-xs font-bold text-[#1d1d1f]">Form Check & Metric Review</p>
+            <p className="text-xs text-[#86868b]">Tuesday, Aug 25 at 10:00 AM</p>
           </div>
 
           <button
-            onClick={() => setActiveView('plans')}
-            className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-[8px] text-xs font-bold text-slate-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            onClick={() => setShowBookSessionModal(true)}
+            className="w-full py-3 bg-[#f5f5f7] hover:bg-black/5 text-[#1d1d1f] rounded-full text-xs font-semibold border border-black/5 active:scale-98 transition-all cursor-pointer"
           >
-            <span>View Full Meal Protocol</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            Schedule 1-on-1 Session
           </button>
         </div>
       </div>
 
-      {/* Log Weight Modal */}
-      <Modal
-        isOpen={showLogWeightModal}
-        onClose={() => setShowLogWeightModal(false)}
-        title="Log Today's Weight"
-      >
-        <form onSubmit={handleLogWeightSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Body Weight (lbs)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={newWeight}
-              onChange={(e) => setNewWeight(Number(e.target.value))}
-              required
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-[10px] text-xs font-mono text-slate-900"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowLogWeightModal(false)}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-[10px] text-xs font-semibold cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-[#a73827] text-white rounded-[10px] text-xs font-bold shadow-2xs cursor-pointer"
-            >
-              Save Weigh-in
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {/* Book Session Modal */}
+      {showBookSessionModal && (
+        <Modal
+          isOpen={showBookSessionModal}
+          onClose={() => setShowBookSessionModal(false)}
+          title="Schedule 1-on-1 Coaching Session"
+        >
+          <form onSubmit={handleBookSessionSubmit} className="space-y-4 pt-2">
+            <div>
+              <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Session Type</label>
+              <select
+                value={sessionForm.type}
+                onChange={(e) => setSessionForm({ ...sessionForm, type: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-[#f5f5f7] border border-black/5 rounded-xl text-xs text-[#1d1d1f]"
+              >
+                <option value="1-on-1 In-Person Form Check">1-on-1 In-Person Form Check</option>
+                <option value="Virtual Video Consultation">Virtual Video Consultation</option>
+                <option value="Monthly Metric & Goal Review">Monthly Metric & Goal Review</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Date</label>
+                <input
+                  type="date"
+                  value={sessionForm.date}
+                  onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#f5f5f7] border border-black/5 rounded-xl text-xs text-[#1d1d1f]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#1d1d1f] mb-1">Time</label>
+                <input
+                  type="text"
+                  value={sessionForm.time}
+                  onChange={(e) => setSessionForm({ ...sessionForm, time: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#f5f5f7] border border-black/5 rounded-xl text-xs text-[#1d1d1f]"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowBookSessionModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-[#86868b] hover:text-[#1d1d1f]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-[#0071e3] text-white text-xs font-semibold rounded-full shadow-sm"
+              >
+                Confirm Request
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

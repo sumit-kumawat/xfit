@@ -94,33 +94,33 @@ export const TrainerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200 pb-16">
-      {/* Top Banner */}
-      <div className="bg-white rounded-[10px] p-6 border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-300 pb-20">
+      {/* Top Header Card */}
+      <div className="apple-bento-card p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Trainer Coaching Dashboard
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1d1d1f] tracking-tight">
+              Coach Command Center
             </h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-[6px] bg-[#a73827]/10 text-[#a73827] border border-[#a73827]/20">
-              {activeTrainer.specialty}
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
+              {activeTrainer.specialty || 'Personal Trainer'}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Welcome back, <strong className="text-slate-800">{activeTrainer.fullName}</strong>. Review your assigned roster and weekly compliance.
+          <p className="text-xs text-[#86868b] mt-1 font-normal">
+            Welcome back, <strong className="text-[#1d1d1f] font-semibold">{activeTrainer.fullName || 'Coach'}</strong>. Manage your client rosters and active splits.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveView('trainer_members')}
-            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-[10px] text-xs font-bold transition-colors cursor-pointer"
+            className="px-4 py-2.5 bg-[#f5f5f7] hover:bg-black/5 text-[#1d1d1f] rounded-full text-xs font-semibold transition-all cursor-pointer border border-black/5"
           >
             Client Directory
           </button>
           <button
             onClick={() => setShowAddMemberModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#a73827] hover:bg-[#8f2f20] text-white rounded-[10px] text-xs font-bold shadow-2xs cursor-pointer transition-all active:scale-95"
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full text-xs font-semibold shadow-sm cursor-pointer transition-all active:scale-95"
           >
             <UserPlus className="w-4 h-4" />
             <span>Onboard Client</span>
@@ -128,54 +128,54 @@ export const TrainerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Core Metric Tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+      {/* 4 Apple Bento Grid Metric Tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
         <div
           onClick={() => setActiveView('trainer_members')}
-          className="bg-white p-4 rounded-[10px] border border-slate-200 shadow-2xs cursor-pointer hover:border-slate-300 transition-colors"
+          className="apple-bento-card p-5 cursor-pointer flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] uppercase font-bold">Active Roster</span>
-            <Users className="w-4 h-4 text-blue-600" />
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Active Roster</span>
+            <Users className="w-4 h-4 text-[#0071e3]" />
           </div>
-          <p className="text-xl font-black text-slate-900 mt-1 font-mono">{activeMembers.length}</p>
-          <span className="text-[10px] text-emerald-700 font-semibold">{trainerCustomers.length} Total Clients</span>
+          <p className="text-2xl font-black text-[#1d1d1f] mt-2 tracking-tight">{activeMembers.length}</p>
+          <span className="text-xs text-emerald-600 font-medium">{trainerCustomers.length} Total Clients</span>
         </div>
 
         <div
           onClick={() => setActiveView('workout_plans')}
-          className="bg-white p-4 rounded-[10px] border border-slate-200 shadow-2xs cursor-pointer hover:border-slate-300 transition-colors"
+          className="apple-bento-card p-5 cursor-pointer flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] uppercase font-bold">Workout Splits</span>
-            <Dumbbell className="w-4 h-4 text-indigo-600" />
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Workout Splits</span>
+            <Dumbbell className="w-4 h-4 text-[#ff2d55]" />
           </div>
-          <p className="text-xl font-black text-slate-900 mt-1 font-mono">{workoutPlans.length}</p>
-          <span className="text-[10px] text-slate-500 font-semibold">Assigned Protocols</span>
+          <p className="text-2xl font-black text-[#1d1d1f] mt-2 tracking-tight">{workoutPlans.length}</p>
+          <span className="text-xs text-[#86868b] font-medium">Assigned Protocols</span>
         </div>
 
         <div
           onClick={() => setActiveView('diet_plans')}
-          className="bg-white p-4 rounded-[10px] border border-slate-200 shadow-2xs cursor-pointer hover:border-slate-300 transition-colors"
+          className="apple-bento-card p-5 cursor-pointer flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] uppercase font-bold">Diet Protocols</span>
-            <Apple className="w-4 h-4 text-emerald-600" />
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Diet Protocols</span>
+            <Apple className="w-4 h-4 text-[#a3ff12]" />
           </div>
-          <p className="text-xl font-black text-slate-900 mt-1 font-mono">{dietPlans.length}</p>
-          <span className="text-[10px] text-slate-500 font-semibold">Veg & Non-Veg Plans</span>
+          <p className="text-2xl font-black text-[#1d1d1f] mt-2 tracking-tight">{dietPlans.length}</p>
+          <span className="text-xs text-[#86868b] font-medium">Nutrition Plans</span>
         </div>
 
         <div
           onClick={() => setActiveView('trainer_members')}
-          className="bg-white p-4 rounded-[10px] border border-slate-200 shadow-2xs cursor-pointer hover:border-slate-300 transition-colors"
+          className="apple-bento-card p-5 cursor-pointer flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] uppercase font-bold">Expiring Soon</span>
-            <AlertCircle className="w-4 h-4 text-amber-600" />
+          <div className="flex items-center justify-between text-[#86868b]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Expiring Soon</span>
+            <AlertCircle className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-xl font-black text-amber-700 mt-1 font-mono">{expiringMembers.length}</p>
-          <span className="text-[10px] text-slate-500">Next 30 Days</span>
+          <p className="text-2xl font-black text-amber-600 mt-2 tracking-tight">{expiringMembers.length}</p>
+          <span className="text-xs text-[#86868b]">Next 30 Days</span>
         </div>
       </div>
 
